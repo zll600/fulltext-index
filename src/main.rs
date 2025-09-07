@@ -1,4 +1,4 @@
-use fulltext_index::{InvertedIndex, Document};
+use fulltext_index::InvertedIndex;
 use fulltext_index::search::BooleanOperator;
 
 fn main() {
@@ -68,9 +68,12 @@ fn main() {
     analyze_term(&index, "search", doc2);
     analyze_term(&index, "language", doc3);
     analyze_term(&index, "retrieval", doc1);
+    analyze_term(&index, "retrieval", doc4);
+    analyze_term(&index, "retrieval", doc5);
 }
 
-fn print_results(index: &InvertedIndex, results: &[fulltext_index::search::SearchResult]) {
+fn print_results(_index: &InvertedIndex, results: &[fulltext_index::search::SearchResult]) {
+    // FIXME: The index parameter is currently unused, but may be useful for future enhancements.
     if results.is_empty() {
         println!("  No results found.");
     } else {
