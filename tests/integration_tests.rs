@@ -6,27 +6,27 @@ fn test_complete_indexing_and_search_workflow() {
     let mut index = InvertedIndex::new();
 
     // Index documents about different topics
-    let doc1 = index.add_document(
+    let _doc1 = index.add_document(
         "Introduction to Machine Learning".to_string(),
         "Machine learning is a method of data analysis that automates analytical model building. It is a branch of artificial intelligence based on the idea that systems can learn from data.".to_string()
     );
 
-    let doc2 = index.add_document(
+    let _doc2 = index.add_document(
         "Deep Learning Fundamentals".to_string(),
         "Deep learning is part of a broader family of machine learning methods based on artificial neural networks with representation learning.".to_string()
     );
 
-    let doc3 = index.add_document(
+    let _doc3 = index.add_document(
         "Natural Language Processing".to_string(),
         "Natural language processing combines computational linguistics with statistical machine learning and deep learning models to enable computers to process human language.".to_string()
     );
 
-    let doc4 = index.add_document(
+    let _doc4 = index.add_document(
         "Computer Vision Applications".to_string(),
         "Computer vision is a field of artificial intelligence that trains computers to interpret and understand visual information from the world around them.".to_string()
     );
 
-    let doc5 = index.add_document(
+    let _doc5 = index.add_document(
         "Database Systems and Information Retrieval".to_string(),
         "Information retrieval systems help users find relevant information from large collections of documents. Modern search engines use sophisticated algorithms.".to_string()
     );
@@ -406,6 +406,7 @@ fn test_multilingual_and_special_characters() {
 
     // Search for alphanumeric terms (numbers might be filtered as too short)
     let version_results = index.search_tfidf("14"); // "3.14" becomes "3" and "14"
+    assert_eq!(version_results.len(), 1);
     // Note: single digit numbers might be filtered out due to min length constraints
 
     // All searches should work correctly with Unicode
@@ -419,15 +420,15 @@ fn test_edge_cases_and_error_handling() {
     let mut index = InvertedIndex::new();
 
     // Empty documents
-    let empty_doc = index.add_document("".to_string(), "".to_string());
+    let _empty_doc = index.add_document("".to_string(), "".to_string());
     assert_eq!(index.total_documents(), 1);
 
     // Whitespace only
-    let whitespace_doc = index.add_document("   \n\t  ".to_string(), "   \n\t  ".to_string());
+    let _whitespace_doc = index.add_document("   \n\t  ".to_string(), "   \n\t  ".to_string());
     assert_eq!(index.total_documents(), 2);
 
     // Very short content
-    let short_doc = index.add_document("A".to_string(), "I am".to_string());
+    let _short_doc = index.add_document("A".to_string(), "I am".to_string());
     assert_eq!(index.total_documents(), 3);
 
     // Search empty query
