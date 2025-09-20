@@ -1,4 +1,5 @@
 use crate::document::{Document, DocumentId, DocumentStore};
+use crate::tokenizer::Tokenizer;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,6 +52,7 @@ pub struct InvertedIndex {
     pub index: HashMap<String, PostingList>,
     document_store: DocumentStore,
     total_terms: usize,
+    tokenizer: Tokenizer,
 }
 
 impl InvertedIndex {
@@ -59,6 +61,7 @@ impl InvertedIndex {
             index: HashMap::new(),
             document_store: DocumentStore::new(),
             total_terms: 0,
+            tokenizer: Tokenizer::new(),
         }
     }
 
@@ -101,20 +104,15 @@ impl InvertedIndex {
 
     fn extract_terms(&self, text: &str, field: FieldType) -> HashMap<String, Vec<TermPosition>> {
         let mut terms = HashMap::new();
-        let tokens: Vec<String> = text
-            .to_lowercase()
-            .split_whitespace()
-            .map(|s| s.trim_matches(|c: char| !c.is_alphanumeric()).to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
+        let tokens = self.tokenizer.tokenize(text);
 
-        for (position, token) in tokens.iter().enumerate() {
+        for token in tokens {
             let term_position = TermPosition {
-                position,
+                position: token.position,
                 field: field.clone(),
             };
             terms
-                .entry(token.clone())
+                .entry(token.text)
                 .or_insert_with(Vec::new)
                 .push(term_position);
         }
@@ -439,5 +437,54 @@ mod tests {
 
         assert_eq!(index.total_documents(), 1);
         assert_eq!(index.total_unique_terms(), 0);
+    }
+
+    #[test]
+    fn test_tokenizer_integration_stop_words() {
+        let mut index = InvertedIndex::new();
+
+        // Add a document with stop words
+        index.add_document(
+            "Test Document".to_string(),
+            "The quick brown fox is an animal".to_string(),
+        );
+
+        // Stop words should NOT be indexed
+        assert!(index.get_posting_list("the").is_none());
+        assert!(index.get_posting_list("is").is_none());
+        assert!(index.get_posting_list("an").is_none());
+
+        // Content words should be indexed
+        assert!(index.get_posting_list("test").is_some());
+        assert!(index.get_posting_list("document").is_some());
+        assert!(index.get_posting_list("quick").is_some());
+        assert!(index.get_posting_list("brown").is_some());
+        assert!(index.get_posting_list("fox").is_some());
+        assert!(index.get_posting_list("animal").is_some());
+
+        // Should have 6 unique terms (test, document, quick, brown, fox, animal)
+        assert_eq!(index.total_unique_terms(), 6);
+    }
+
+    #[test]
+    fn test_tokenizer_integration_min_length() {
+        let mut index = InvertedIndex::new();
+
+        // Add document with short words
+        index.add_document("Short Words".to_string(), "I a go to it".to_string());
+
+        // Single character words should not be indexed (min length is 2)
+        assert!(index.get_posting_list("i").is_none());
+        assert!(index.get_posting_list("a").is_none());
+
+        // Two character words should be indexed (unless they're stop words)
+        assert!(index.get_posting_list("go").is_some());
+        // "to" and "it" are stop words, so they won't be indexed
+        assert!(index.get_posting_list("to").is_none());
+        assert!(index.get_posting_list("it").is_none());
+
+        // From title
+        assert!(index.get_posting_list("short").is_some());
+        assert!(index.get_posting_list("words").is_some());
     }
 }
