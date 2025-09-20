@@ -18,17 +18,16 @@ impl Tokenizer {
     pub fn new() -> Self {
         let mut stop_words = HashSet::new();
         let common_stop_words = vec![
-            "a", "an", "and", "are", "as", "at", "be", "been", "by", "for",
-            "from", "has", "he", "in", "is", "it", "its", "of", "on", "that",
-            "the", "to", "was", "will", "with", "the", "this", "these", "those",
-            "i", "you", "we", "they", "them", "their", "what", "which", "who",
-            "when", "where", "why", "how", "all", "would", "there", "been"
+            "a", "an", "and", "are", "as", "at", "be", "been", "by", "for", "from", "has", "he",
+            "in", "is", "it", "its", "of", "on", "that", "the", "to", "was", "will", "with", "the",
+            "this", "these", "those", "i", "you", "we", "they", "them", "their", "what", "which",
+            "who", "when", "where", "why", "how", "all", "would", "there", "been",
         ];
-        
+
         for word in common_stop_words {
             stop_words.insert(word.to_string());
         }
-        
+
         Self {
             stop_words,
             min_token_length: 2,
@@ -39,11 +38,11 @@ impl Tokenizer {
     pub fn tokenize(&self, text: &str) -> Vec<Token> {
         let mut tokens = Vec::new();
         let mut position = 0;
-        
+
         let text_chars: Vec<char> = text.chars().collect();
         let mut current_word = String::new();
         let mut word_start = 0;
-        
+
         for (i, ch) in text_chars.iter().enumerate() {
             if ch.is_alphanumeric() {
                 if current_word.is_empty() {
@@ -52,7 +51,9 @@ impl Tokenizer {
                 current_word.push(*ch);
             } else {
                 if !current_word.is_empty() {
-                    if let Some(token) = self.create_token(current_word.clone(), position, word_start, i) {
+                    if let Some(token) =
+                        self.create_token(current_word.clone(), position, word_start, i)
+                    {
                         tokens.push(token);
                         position += 1;
                     }
@@ -60,27 +61,35 @@ impl Tokenizer {
                 }
             }
         }
-        
+
         if !current_word.is_empty() {
-            if let Some(token) = self.create_token(current_word, position, word_start, text_chars.len()) {
+            if let Some(token) =
+                self.create_token(current_word, position, word_start, text_chars.len())
+            {
                 tokens.push(token);
             }
         }
-        
+
         tokens
     }
 
-    fn create_token(&self, text: String, position: usize, start: usize, end: usize) -> Option<Token> {
+    fn create_token(
+        &self,
+        text: String,
+        position: usize,
+        start: usize,
+        end: usize,
+    ) -> Option<Token> {
         let normalized = text.to_lowercase();
-        
+
         if normalized.len() < self.min_token_length || normalized.len() > self.max_token_length {
             return None;
         }
-        
+
         if self.stop_words.contains(&normalized) {
             return None;
         }
-        
+
         Some(Token {
             text: normalized,
             position,
@@ -128,7 +137,7 @@ pub struct SimpleStemmer;
 impl SimpleStemmer {
     pub fn stem(word: &str) -> String {
         let word = word.to_lowercase();
-        
+
         if word.ends_with("ing") && word.len() > 5 {
             word[..word.len() - 3].to_string()
         } else if word.ends_with("ed") && word.len() > 4 {
@@ -153,7 +162,7 @@ mod tests {
     fn test_tokenizer_basic() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("The quick brown fox jumps over the lazy dog!");
-        
+
         assert_eq!(tokens.len(), 7);
         assert_eq!(tokens[0].text, "quick");
         assert_eq!(tokens[1].text, "brown");
@@ -167,19 +176,19 @@ mod tests {
     fn test_tokenizer_positions() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("hello world test");
-        
+
         assert_eq!(tokens.len(), 3);
-        
+
         assert_eq!(tokens[0].text, "hello");
         assert_eq!(tokens[0].position, 0);
         assert_eq!(tokens[0].start_offset, 0);
         assert_eq!(tokens[0].end_offset, 5);
-        
+
         assert_eq!(tokens[1].text, "world");
         assert_eq!(tokens[1].position, 1);
         assert_eq!(tokens[1].start_offset, 6);
         assert_eq!(tokens[1].end_offset, 11);
-        
+
         assert_eq!(tokens[2].text, "test");
         assert_eq!(tokens[2].position, 2);
         assert_eq!(tokens[2].start_offset, 12);
@@ -190,10 +199,10 @@ mod tests {
     fn test_tokenizer_stop_words() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("the quick brown fox is an animal");
-        
+
         let token_texts: Vec<String> = tokens.iter().map(|t| t.text.clone()).collect();
         assert_eq!(token_texts, vec!["quick", "brown", "fox", "animal"]);
-        
+
         assert!(!token_texts.contains(&"the".to_string()));
         assert!(!token_texts.contains(&"is".to_string()));
         assert!(!token_texts.contains(&"an".to_string()));
@@ -203,9 +212,9 @@ mod tests {
     fn test_tokenizer_min_length() {
         let mut tokenizer = Tokenizer::new();
         tokenizer.set_min_token_length(3);
-        
+
         let tokens = tokenizer.tokenize("a bb ccc dddd");
-        
+
         assert_eq!(tokens.len(), 2);
         assert_eq!(tokens[0].text, "ccc");
         assert_eq!(tokens[1].text, "dddd");
@@ -215,9 +224,9 @@ mod tests {
     fn test_tokenizer_max_length() {
         let mut tokenizer = Tokenizer::new();
         tokenizer.set_max_token_length(5);
-        
+
         let tokens = tokenizer.tokenize("short verylongword medium");
-        
+
         let token_texts: Vec<String> = tokens.iter().map(|t| t.text.clone()).collect();
         assert_eq!(token_texts, vec!["short"]);
         assert!(!token_texts.contains(&"verylongword".to_string()));
@@ -228,27 +237,30 @@ mod tests {
     fn test_tokenizer_punctuation() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("hello, world! computer programming test?");
-        
+
         let token_texts: Vec<String> = tokens.iter().map(|t| t.text.clone()).collect();
-        
+
         assert!(token_texts.contains(&"hello".to_string()));
         assert!(token_texts.contains(&"world".to_string()));
         assert!(token_texts.contains(&"computer".to_string()));
         assert!(token_texts.contains(&"programming".to_string()));
         assert!(token_texts.contains(&"test".to_string()));
-        
+
         assert!(!token_texts.contains(&",".to_string()));
         assert!(!token_texts.contains(&"!".to_string()));
         assert!(!token_texts.contains(&"?".to_string()));
-        
-        assert_eq!(token_texts, vec!["hello", "world", "computer", "programming", "test"]);
+
+        assert_eq!(
+            token_texts,
+            vec!["hello", "world", "computer", "programming", "test"]
+        );
     }
 
     #[test]
     fn test_tokenizer_numbers_and_alphanumeric() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("test123 456 abc def789");
-        
+
         let token_texts: Vec<String> = tokens.iter().map(|t| t.text.clone()).collect();
         assert_eq!(token_texts, vec!["test123", "456", "abc", "def789"]);
     }
@@ -257,7 +269,7 @@ mod tests {
     fn test_tokenizer_empty_input() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("");
-        
+
         assert_eq!(tokens.len(), 0);
     }
 
@@ -265,7 +277,7 @@ mod tests {
     fn test_tokenizer_whitespace_only() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("   \t\n\r  ");
-        
+
         assert_eq!(tokens.len(), 0);
     }
 
@@ -273,7 +285,7 @@ mod tests {
     fn test_tokenizer_case_normalization() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("Hello WORLD Test");
-        
+
         assert_eq!(tokens[0].text, "hello");
         assert_eq!(tokens[1].text, "world");
         assert_eq!(tokens[2].text, "test");
@@ -284,9 +296,9 @@ mod tests {
         let mut tokenizer = Tokenizer::new();
         tokenizer.add_stop_word("custom");
         tokenizer.add_stop_word("special");
-        
+
         let tokens = tokenizer.tokenize("this custom word and special term");
-        
+
         let token_texts: Vec<String> = tokens.iter().map(|t| t.text.clone()).collect();
         assert_eq!(token_texts, vec!["word", "term"]);
     }
@@ -295,9 +307,9 @@ mod tests {
     fn test_tokenizer_remove_stop_word() {
         let mut tokenizer = Tokenizer::new();
         tokenizer.remove_stop_word("the");
-        
+
         let tokens = tokenizer.tokenize("the quick brown fox");
-        
+
         let token_texts: Vec<String> = tokens.iter().map(|t| t.text.clone()).collect();
         assert_eq!(token_texts, vec!["the", "quick", "brown", "fox"]);
     }
@@ -306,7 +318,7 @@ mod tests {
     fn test_tokenizer_unicode_characters() {
         let tokenizer = Tokenizer::new();
         let tokens = tokenizer.tokenize("café naïve résumé");
-        
+
         let token_texts: Vec<String> = tokens.iter().map(|t| t.text.clone()).collect();
         assert_eq!(token_texts, vec!["café", "naïve", "résumé"]);
     }
@@ -314,14 +326,14 @@ mod tests {
     #[test]
     fn test_normalizer() {
         let normalized = SimpleNormalizer::normalize("Hello, World! 123 @#$%");
-        
+
         assert_eq!(normalized, "hello  world  123     ");
     }
 
     #[test]
     fn test_normalizer_preserve_whitespace() {
         let normalized = SimpleNormalizer::normalize("hello   world");
-        
+
         assert_eq!(normalized, "hello   world");
     }
 
@@ -330,8 +342,8 @@ mod tests {
         assert_eq!(SimpleStemmer::stem("running"), "runn");
         assert_eq!(SimpleStemmer::stem("walking"), "walk");
         assert_eq!(SimpleStemmer::stem("jumping"), "jump");
-        
-        assert_eq!(SimpleStemmer::stem("sing"), "sing");  // Length 4, would become 1 char
+
+        assert_eq!(SimpleStemmer::stem("sing"), "sing"); // Length 4, would become 1 char
         assert_eq!(SimpleStemmer::stem("bring"), "bring"); // Length 5, would become 2 chars (minimum)
     }
 
@@ -340,7 +352,7 @@ mod tests {
         assert_eq!(SimpleStemmer::stem("jumped"), "jump");
         assert_eq!(SimpleStemmer::stem("walked"), "walk");
         assert_eq!(SimpleStemmer::stem("tested"), "test");
-        
+
         assert_eq!(SimpleStemmer::stem("used"), "used"); // Length 4, would become 2 chars
     }
 
@@ -349,7 +361,7 @@ mod tests {
         assert_eq!(SimpleStemmer::stem("quickly"), "quick");
         assert_eq!(SimpleStemmer::stem("slowly"), "slow");
         assert_eq!(SimpleStemmer::stem("really"), "real");
-        
+
         assert_eq!(SimpleStemmer::stem("only"), "only"); // Length 4, would become 2 chars
     }
 
@@ -358,7 +370,7 @@ mod tests {
         assert_eq!(SimpleStemmer::stem("boxes"), "box");
         assert_eq!(SimpleStemmer::stem("wishes"), "wish");
         assert_eq!(SimpleStemmer::stem("classes"), "class");
-        
+
         assert_eq!(SimpleStemmer::stem("ges"), "ges"); // Length 3, too short
     }
 
@@ -367,11 +379,11 @@ mod tests {
         assert_eq!(SimpleStemmer::stem("cats"), "cat");
         assert_eq!(SimpleStemmer::stem("dogs"), "dog");
         assert_eq!(SimpleStemmer::stem("books"), "book");
-        
+
         assert_eq!(SimpleStemmer::stem("class"), "class");
         assert_eq!(SimpleStemmer::stem("grass"), "grass");
         assert_eq!(SimpleStemmer::stem("pass"), "pass");
-        
+
         assert_eq!(SimpleStemmer::stem("yes"), "yes"); // Length 3, would become 2 chars
     }
 
@@ -393,7 +405,7 @@ mod tests {
     fn test_stemmer_empty_and_short_words() {
         // Empty string
         assert_eq!(SimpleStemmer::stem(""), "");
-        
+
         // Very short words
         assert_eq!(SimpleStemmer::stem("a"), "a");
         assert_eq!(SimpleStemmer::stem("is"), "is");
